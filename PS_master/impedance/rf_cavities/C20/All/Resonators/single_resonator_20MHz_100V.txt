@@ -1,0 +1,5 @@
+# Impedance of C20 
+# Single resonator at f=20.0 MHz and V=2.0e+04 V
+# Author: M. Morvillo
+# f_r [Hz]	R_s [Ohm]	Q
+2.000000000000000000e+07 1.440283018867924341e+02 4.580099999999999838e+00

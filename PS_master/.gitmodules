@@ -1,0 +1,3 @@
+[submodule "impedance_toolbox"]
+	path = impedance_toolbox
+	url = https://gitlab.cern.ch/longitudinal-impedance/toolbox.git

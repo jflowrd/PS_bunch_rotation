@@ -1,0 +1,5 @@
+# Impedance of C10-86 
+# Single resonator fit for h=16
+# Author: A. Lasheen
+# f_r [Hz]				R_s [Ohm]				Q
+7.672574044447382912e+06 7.644810573053962344e+02 5.277831243603014144e+00

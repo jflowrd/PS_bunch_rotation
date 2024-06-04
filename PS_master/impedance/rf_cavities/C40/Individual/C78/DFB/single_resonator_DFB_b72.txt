@@ -1,0 +1,6 @@
+# Impedance of C40-78
+# Single resonator fit for 72 bunches
+# Impedance damped by Direct Feedback
+# Author: A. Lasheen
+# f_r [Hz]	R_s [Ohm]	Q	N period delay	Loop gain [dB]
+4.004209721134717762e+07 6.305423212065708358e+05 1.013858852315796139e+04 1.500000000000000000e+01 4.357393101474423247e+01

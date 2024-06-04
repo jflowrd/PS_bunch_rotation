@@ -1,0 +1,5 @@
+# Impedance of C10-51 
+# Single resonator fit for h=8
+# Author: A. Lasheen
+# f_r [Hz]				R_s [Ohm]				Q
+3.879418243281746283e+06 9.843403742362943376e+02 3.835613539067742828e+00

@@ -1,0 +1,7 @@
+*.pyc
+*/*.pyc
+*/*/*.pyc
+
+*.project
+*.pydevproject
+*.ipynb_checkpoints

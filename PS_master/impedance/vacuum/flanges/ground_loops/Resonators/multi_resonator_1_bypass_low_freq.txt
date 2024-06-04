@@ -1,0 +1,4 @@
+# Impedance of ground loops with 1 RF bypass
+# Only low freq resonance
+# f_r [Hz]			R_s [Ohm]			Q
+7.900007900007900025e+04 2.041211551574960481e+01 4.051282051282052876e+00

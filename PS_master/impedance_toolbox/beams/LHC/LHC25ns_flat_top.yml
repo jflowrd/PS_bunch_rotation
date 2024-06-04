@@ -1,0 +1,64 @@
+Bunch parameters:
+  Binomial exponent: 2.5
+  Bunch length [ns]: 1.2
+  Intensity per bunch [1e10 ppb]: 11.5
+  Line density: binomial
+Filling scheme:
+  Buckets between batches: 80
+  Buckets between bunches: 10
+  Buckets between fills: 320
+  Number of batches:
+  - 1
+  - 2
+  - 3
+  - 3
+  - 3
+  - 2
+  - 3
+  - 3
+  - 3
+  - 3
+  - 2
+  - 3
+  - 3
+  - 3
+  - 3
+  - 2
+  - 3
+  - 3
+  - 3
+  - 3
+  Number of bunches:
+  - 12
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  - 48
+  Number of fills: 20
+General parameters:
+  Circumference [m]: 26658.86
+  Momentum [1e9 eV/c]: 7000
+  Particle type: proton
+  Transition gamma: 53.83
+RF parameters:
+  Harmonic numbers:
+  - 35640
+  RF voltages:
+  - 10000000
+  RF phases:
+  - 0

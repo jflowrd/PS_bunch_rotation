@@ -1,0 +1,5 @@
+# Impedance of C80-08 
+# Single resonator fit for 48 bunches
+# Author: A. Lasheen
+# f_r [Hz]	R_s [Ohm]	Q
+8.015859867518062890e+07 9.253988073917613292e+03 1.244590720731729334e+02

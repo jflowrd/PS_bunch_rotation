@@ -1,0 +1,5 @@
+# Impedance of C40-77 
+# Single resonator fit for 36 bunches
+# Author: A. Lasheen
+# f_r [Hz]	R_s [Ohm]	Q
+4.007929933759031445e+07 4.479595221344420679e+03 8.250471594293485111e+01

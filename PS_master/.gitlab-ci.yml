@@ -1,0 +1,31 @@
+stages:
+ - update_docs
+
+update_docs:
+ stage: update_docs
+ image: "python:3.6"
+ only:
+  - master
+ before_script:
+  - pip install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
+  - pip install pyyaml
+  - mkdir -p ~/.ssh
+  - echo "$SSH_DOC_CI" | tr -d '\r' > ~/.ssh/id_rsa
+  - chmod 700 ~/.ssh/id_rsa
+  - eval "$(ssh-agent -s)"
+  - ssh-add ~/.ssh/id_rsa
+  - ssh-keyscan -t rsa 'gitlab.cern.ch' >> ~/.ssh/known_hosts
+  - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'  
+  - git config --global user.name ${GITLAB_USER_LOGIN}
+  - git config --global user.email ${GITLAB_USER_EMAIL}
+ script: 
+  - python --version
+  - git clone ssh://git@gitlab.cern.ch:7999/longitudinal-impedance/mkdocs.git mkdocs
+  - python update_docs.py
+  - cd mkdocs
+  - git status
+  - git add -A
+  - git diff-index --quiet HEAD || git commit -m "Updated PS documentation"
+  - git push

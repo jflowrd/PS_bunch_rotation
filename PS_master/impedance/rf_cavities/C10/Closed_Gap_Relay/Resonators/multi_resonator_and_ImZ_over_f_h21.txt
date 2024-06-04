@@ -1,0 +1,7 @@
+# Impedance of C10-11_ClosedGapRelays 
+# Multi resonator and ImZ/f fit for h=21
+# The ImZ/n was divided over the number of resonators and should be summed
+# Author: A. Lasheen
+# f_r [Hz]			R_s [Ohm]			Q			ImZ/f [Hz-1]
+2.276878406960666552e+07 6.661465418184920054e+03 7.770267578844766376e+00 6.468145234396597061e-07
+2.274699876037869602e+07 -6.556548411328431030e+03 7.714962070503689873e+00 6.468145234396597061e-07

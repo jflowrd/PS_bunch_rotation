@@ -1,0 +1,6 @@
+# Impedance of C10 cavities summed
+# Total impedance divided by 10 to have "single" cavity impedance
+# Single resonator fit for h=21
+# Author: A. Lasheen
+# f_r [Hz]				R_s [Ohm]				Q
+9.860944280723674223e+06 7.691696828196692195e+02 8.157582101860359813e+00

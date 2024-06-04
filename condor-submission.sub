@@ -1,0 +1,22 @@
+####################
+#
+# Simple HTCondor submit description file
+# Everything with a leading # is a comment
+####################
+
+executable 	= job_exec_cpu.sh
+arguments	= $(LENGTH) $(ClusterId)
+output 		= output/cpp.$(ClusterId).$(ProcId).out
+error 		= error/cpp.$(ClusterId).$(ProcId).err
+log		    = log/cpp.$(ClusterId).$(ProcId).log
+
+request_cpus   	= 4
+# requirements 
++MaxRuntime 	= 7200
+#+JobFlavour	= "longlunch"
+getenv 			= True
+should_transfer_files = IF_NEEDED
+
+LENGTH=350
+
+queue 

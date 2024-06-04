@@ -1,0 +1,30 @@
+# Directories
+.pytest_cache
+.coverage
+__doc/build
+env/
+results/
+
+# build folders
+/build/
+/wheelhouse/
+/dist/
+/cmake-build-debug/
+/cmake-build-release/
+*.egg-info
+
+# IDE files
+.vscode
+.idea
+
+# Filetypes
+*.pyc
+*.dat
+*.data
+*.npy
+*.npz
+*.so
+*.o
+*.asc
+*.png
+*.gif

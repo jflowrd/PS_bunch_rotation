@@ -1,0 +1,3 @@
+# Impedance of step transitions 
+# ImZ/f [Hz-1]
+2.013332581401899963e-06

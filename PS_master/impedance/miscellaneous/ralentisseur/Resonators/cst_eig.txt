@@ -1,0 +1,3 @@
+# Main resonance
+# f [Hz], R [Ohm], Q
+1.535e9 117e3 3449

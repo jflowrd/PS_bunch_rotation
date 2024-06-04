@@ -1,0 +1,12 @@
+# Eclipse files
+
+.project
+.pydevproject
+.settings
+
+# Python compiled files
+*.pyc
+
+# Windows files
+Thumbs.db
+~$*

@@ -1,0 +1,5 @@
+# Impedance of upstream assembly (bellow) 
+# ImZ/f fit
+# Author: A. Lasheen
+# ImZ/f [Hz-1]
+1.087719726562497647e-08

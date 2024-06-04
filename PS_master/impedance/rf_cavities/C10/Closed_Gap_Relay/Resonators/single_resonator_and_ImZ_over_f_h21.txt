@@ -1,0 +1,5 @@
+# Impedance of C10-11_ClosedGapRelays 
+# Single resonator and ImZ/f fit for h=21
+# Author: A. Lasheen
+# f_r [Hz]			R_s [Ohm]			Q			ImZ/f [Hz-1]
+2.338917327838148922e+07 1.491988695273318228e+02 1.570350808423478739e+01 1.388837970506121915e-06

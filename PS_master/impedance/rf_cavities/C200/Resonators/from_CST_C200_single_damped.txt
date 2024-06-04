@@ -1,0 +1,6 @@
+# Impedance as measured by S. Persichelli 
+# Q damped by 3 PIN lines (rf not in use)
+# Single gap, 6 in total
+# Single resonator
+# f_r [Hz]	R_s [Ohm]	Q
+1.999480000000000000e+08 3.819000000000000000e+03 1.340000000000000000e+02

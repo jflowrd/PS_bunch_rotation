@@ -1,0 +1,6 @@
+# Impedance of Finemet cavity (total, 6 cells) 
+# Single resonators fit
+# Impedance data: M. Paoluzzi
+# Fit: A. Lasheen
+# f_r [Hz]				R_s [Ohm]				Q
+1.962912357607911574e+06 8.094004339694246255e+02 5.000000100000000502e-01

@@ -1,0 +1,3 @@
+# Impedance of ground loops with 1 RF bypass
+# f_r [Hz]			R_s [Ohm]			Q
+1.591549430918953381e+06 1.000000000000000000e+02 1.000000000000000000e+00

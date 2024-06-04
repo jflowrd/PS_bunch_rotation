@@ -1,0 +1,6 @@
+# Impedance of C80-08
+# Single resonator fit for 36 bunches
+# Impedance damped by Direct Feedback
+# Author: A. Lasheen
+# f_r [Hz]	R_s [Ohm]	Q	N period delay	Loop gain [dB]
+8.004191985545459390e+07 9.958613447231049649e+05 1.610843579384952318e+04 1.800000000000000000e+01 4.109294842376682766e+01

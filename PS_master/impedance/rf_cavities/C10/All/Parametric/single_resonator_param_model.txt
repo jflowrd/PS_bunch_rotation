@@ -1,0 +1,8 @@
+# Impedance of all cavities except C10-11
+# Total impedance divided by 10 to have "single" cavity impedance
+# Parametric model based on single resonators fit
+# Author: A. Lasheen
+# f_r [Hz]				R_s [Ohm]				Q
+3.810753089546420611e+06 8.289423546528960287e+02 3.155136129473878004e+00
+7.682888927678954788e+06 7.558797624746831616e+02 5.785906081805030965e+00
+9.860944280723674223e+06 7.691696828196692195e+02 8.157582101860359813e+00
