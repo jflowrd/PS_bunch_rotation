@@ -17,6 +17,7 @@ import sys
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib.animation import FuncAnimation
 from scipy.stats import gaussian_kde
 
@@ -27,12 +28,14 @@ from blond.input_parameters.rf_parameters import RFStation
 from blond.beam.beam import Proton, Beam
 from blond.beam.profile import Profile, CutOptions
 from blond.trackers.tracker import RingAndRFTracker, FullRingAndRF
+from blond.trackers.utilities import is_in_separatrix
 from blond.beam.distributions_multibunch import match_beam_from_distribution
 from blond.plots.plot import Plot
 from blond.impedances.impedance import InductiveImpedance, InducedVoltageTime, InducedVoltageFreq, TotalInducedVoltage
 from blond.impedances.impedance_sources import Resonators
 from blond.impedances import induced_voltage_analytical
 from PS_bunch_rotation_generation import C40_77_prog, C40_78_prog, C80_08_prog, C80_88_prog, C80_phase_prog, C40_phase_prog
+from SPS_parameters import circumference_sps, momentum_compaction_sps, momentum_sps, harmonic_number_sps, voltage_sps
 
 # BLonD common imports
 sys.path.append('../../pymodules/')
@@ -58,20 +61,24 @@ sys.path.append('../pymodules/')
 case_name = 'PS_impedance'
 results_folder = 'results/' + case_name
 
+## Plotting options
 plot_turns = False
 plot_animation = False
 plot_save_turns = False
 plot_final_turn = False
-plot_voltage_ramp = False
+plot_voltage_program = True
+plot_phase_program = False
 plot_impeadance = False
 plot_induced_voltage = False
 
-multi_turn_wake = True
+## Settings options
+multi_turn_wake = False
 
-''' Plotting parameters '''
-dt_plt = 100 # <----- Number of turns between phase space plots
-E_min = -100e6
-E_max = 100e6
+## Bunch rotation settings in 10 MHz clock (i.e. 0.1 us steps)
+h84_start_offset = 12150
+h84_delay = 12550
+h168_delay = 78800
+h84_adiabatic_ramp = 65000
 
 # %% BLonD setting up
 
@@ -86,20 +93,22 @@ momentum_compaction_ps = 1. / gamma_transition_ps**2    # Momentum compaction
 # RF parameters PS
 n_rf_systems_ps = 2                     # Number of rf systems
 harmonic_numbers_ps = [84, 168]         # Harmonic numbers
-length_step_h168 = 133                  # First Step time [us] (old value: 133)
+length_step_h168 = 0.1*(h168_delay - h84_delay - h84_adiabatic_ramp)  # First Step time [us] (old value: 133)
 amplitude_step_h168 = 0.                # Lin. step amplitude [kV]
 C40_77_prog_factor = 271.34/300         # Calibration factor C40-77 (old value: 284.700 / 300)
 C40_78_prog_factor = 231.46/300         # Calibration factor C40-78 (old value: 1.)
 C80_08_prog_factor = 0                  # Calibration factor C80-08 (old value: 1.) # 279.14/300
 C80_88_prog_factor = 311.56/300         # Calibration factor C80-88 (old value: 1.)
 C80_89_prog_factor = 277.58/300         # Calibration factor C80-89 (old value: 0.) # 277.58/300
+
+## RF phase PS
 intial_phase_h84 = 0
 final_phase_h84 = 0
 initial_phase_h168 = 0
 step_adjust_h168 = 0
 final_phase_h168 = initial_phase_h168 - np.pi + step_adjust_h168
 
-# Beam parameters
+## Beam parameters
 n_bunches = 1
 n_macroparticles_per_bunch = 1e6 #1e6
 intensity_per_bunch = 2.6e11
@@ -109,16 +118,37 @@ adjusted_4sig = 11.4e-9
 adjusted_full_bl = 14.6e-9
 adjusted_exponent = ((2 * adjusted_full_bl / adjusted_4sig)**2. - 3) / 2. - 0.5
 
-# Profile parameters
+## Intensity phase adjustments
+# final_phase_h84 = (14.85167268558227)/2 * (intensity_per_bunch/1.3e11) * np.pi/180
+# initial_phase_h168 = final_phase_h84*2 + (19.334205558955517)/2 * (intensity_per_bunch/1.3e11) * np.pi / 180
+# # initial_phase_h168 = float(loadedParams['dpc80']) * np.pi / 180
+# step_adjust_h168 = -12.377183242204428/2 * (intensity_per_bunch/1.3e11) * np.pi / 180
+# final_phase_h168 = initial_phase_h168 - np.pi + step_adjust_h168
+
+## Profile parameters
 n_bins_per_bunch_ps = 2**8
 bunch_spacing_buckets_ps = 1
 n_bins_ps = int(n_bins_per_bunch_ps *
                 (bunch_spacing_buckets_ps * (harmonic_numbers_ps[0] - 1) + 1))
 
-# Impedance
+## Impedance
+# Wake
 filter_front_wake = 0.5
 n_turns_memory = 100
 gene_iterations = 8
+
+# MHFB
+impedance_reduction_target_C40_MHFB = -20. * 0
+impedance_reduction_target_C80_MHFB = -20. * 0
+
+## Assumptions on impedance
+RshFactor_MU_downstream=1/6
+QFactor_MU_downstream=1/6
+
+## Plotting parameters
+dt_plt = 50 # <----- Number of turns between phase space plots
+E_min = -100e6
+E_max = 100e6
 
 # %% Building BLonD objects and running the simulation
 
@@ -134,7 +164,7 @@ except FileExistsError:
     pass
 
 # Iterate the simulation twice to extract when the beam is the shortest
-number_iterations_for_extraction = 2
+number_iterations_for_extraction = 1
 extraction_turn = -1
 idx_sim = 0
 
@@ -148,7 +178,7 @@ for idx_sim in range(number_iterations_for_extraction):
     #print('extraction_turn:', extraction_turn)
 
     if extraction_turn == -1:
-        time_shortening = 300e-6 #1500e-6 for filamentation
+        time_shortening = 40e-6 + 230.65e-6 #PEX.SEJ - PAX.SBRH84 - 6500 us  #1500e-6 for filamentation #294e-6 for local optimum
         n_turns_ps = int(round(time_shortening / ring_ps.t_rev[0]))
     else:
         n_turns_ps = extraction_turn[0] + 1
@@ -157,7 +187,7 @@ for idx_sim in range(number_iterations_for_extraction):
                    particle_type, n_turns_ps)
 
     # RF parameters
-    start_bunch_rotation_h84 = 40e-6
+    start_bunch_rotation_h84 = 0.1*(h84_delay - h84_start_offset)*1e-6  #40e-6
 
     C40_77_RF_program = 1e3 * C40_77_prog(ring_ps.cycle_time * 1e6,
                                           start_bunch_rotation_h84 * 1e6,
@@ -247,9 +277,28 @@ for idx_sim in range(number_iterations_for_extraction):
     machineParams.generateBeamCurrent(n_turns, maxFreq=maxFreq)
     machineParams.generateBeamSpectrum()
 
+    # Impedance
+    if idx_sim == 0:
+        if C80_89_prog_factor > 0:
+            ZFactor_C80_MHFB = 3/2.
+            RshFactor_C80_HOMs = 3/2.
+        else:
+            ZFactor_C80_MHFB = 1.
+            RshFactor_C80_HOMs = 1.
+
     # Loading scenario at flat top
     PS_loader = ImpedanceLoader(MODEL=model, f_rev=ring_ps.f_rev[0],
                                 momentum=ring_ps.momentum[0,0],
+                                ZFactor_C40_MHFB=1,
+                                enable_C40_MHFB=True,
+                                main_harmonic_enableFB_C40_MHFB=None,
+                                impedance_reduction_target_C40_MHFB=impedance_reduction_target_C40_MHFB,
+                                enable_C80_MHFB=True,
+                                main_harmonic_enableFB_C80_MHFB=None,
+                                impedance_reduction_target_C80_MHFB=impedance_reduction_target_C80_MHFB,
+                                ZFactor_C80_MHFB=ZFactor_C80_MHFB,
+                                RshFactor_MU_downstream=RshFactor_MU_downstream,
+                                QFactor_MU_downstream=QFactor_MU_downstream,
                                 folder=script_path + '/impedance',
                                 freq_array=np.linspace(0, 5.2e9, int(1e7))) # machineParams.freqArray
 
@@ -263,7 +312,8 @@ for idx_sim in range(number_iterations_for_extraction):
     ImZ_over_f_list = imp.ImZ_over_f_List
 
     #Z_over_n = np.sum(np.array(ImZ_over_f_list[:-1])*ring_ps.f_rev[0]) * np.ones(ring_ps.n_turns+1)
-    Z_over_n = np.zeros(ring_ps.n_turns + 1)
+    #Z_over_n = np.zeros(ring_ps.n_turns + 1)
+    Z_over_n = np.sum(np.array(ImZ_over_f_list[:-1])*ring_ps.f_rev[0]) * np.ones(ring_ps.n_turns+1)
 
     print("Revolution Frequency: ", ring_ps.f_rev[0])
     # # 10 MHz Cavity
@@ -295,7 +345,7 @@ for idx_sim in range(number_iterations_for_extraction):
                                            impedance_sources, #[my_res_10, my_res_20, my_res_40, my_res_80], #[my_res], #ResonatorsList+ImpedanceTable_list
                                            RFParams=rf_params_ps,
                                             # use_regular_fft=False,
-                                            frequency_resolution=frequency_step,
+                                           frequency_resolution=frequency_step,
                                            multi_turn_wake=multi_turn_wake,
                                            front_wake_length=front_wake_length)
 
@@ -304,6 +354,7 @@ for idx_sim in range(number_iterations_for_extraction):
 
     PS_longitudinal_intensity = TotalInducedVoltage(beam_ps, profile_ps, [PS_intensity_freq, PS_inductive])
 
+    #plt.figure('Impedance')
     uber_plot(PS_intensity_freq.freq/1e6,
           np.abs(PS_intensity_freq.total_impedance*profile_ps.bin_size)/1e3,
           figname='Impedance',
@@ -331,7 +382,7 @@ for idx_sim in range(number_iterations_for_extraction):
         match_beam_from_distribution(beam_ps, full_tracker_ps, ring_ps,
                                      distribution_options, n_bunches,
                                      bunch_spacing_buckets_ps,
-                                     TotalInducedVoltage=None, #PS_longitudinal_intensity,
+                                     TotalInducedVoltage = PS_longitudinal_intensity,
                                      n_iterations=gene_iterations,
                                      n_points_potential=int(1e3))
 
@@ -365,7 +416,7 @@ for idx_sim in range(number_iterations_for_extraction):
         # + induced_voltage_analytical.analytical_gaussian_resonator(profile_ps.bunchLength/4, my_res_10.Q, my_res_10.R_S, my_res_10.omega_R, time_array-0.5*rf_params_ps.t_rf[0, 0], intensity)
         # + induced_voltage_analytical.analytical_gaussian_resonator(profile_ps.bunchLength/4, my_res_20.Q, my_res_20.R_S, my_res_20.omega_R, time_array-0.5*rf_params_ps.t_rf[0, 0], intensity)
         # print('bunch length: ', profile_ps.bunchLength)
-        plt.figure()
+        plt.figure('Induced Voltage')
         plt.plot(time_array , PS_longitudinal_intensity.induced_voltage, label='Induced Voltage')
         # plt.plot(time_array , analytical_induced_voltage, '--', label= 'Analytical Induced Voltage') # Analyticaly calculate the induced voltage
         plt.ylabel('Induced voltage [V]')
@@ -374,14 +425,14 @@ for idx_sim in range(number_iterations_for_extraction):
         plt.show()
 
         if multi_turn_wake:
-            plt.figure()
+            plt.figure('Multi turn wake')
             plt.plot(PS_intensity_freq.time_mtw, PS_intensity_freq.induced_voltage)
             plt.ylabel('Induced voltage [V]')
             plt.xlabel('Time [s]')
             plt.legend(loc='best')
             plt.show()
     
-    # Saving beam parameters
+    ## Saving beam parameters
     fwhm_save = np.zeros((n_bunches, ring_ps.n_turns + 1))
     profile_ps.fwhm()
     fwhm_save[0, 0] = profile_ps.bunchLength
@@ -391,15 +442,15 @@ for idx_sim in range(number_iterations_for_extraction):
         profile_ps.bin_centers,
         profile_ps.n_macroparticles)[-1] * 4
 
-    # Plots
-    plots = Plot(ring_ps, rf_params_ps, beam_ps, dt_plt, ring_ps.n_turns,
-            0, (n_bunches)*rf_params_ps.t_rf[0, 0], # <----- dt limits of the phase space plot
-            E_min, E_max, # <---------------- dE limits of the phase space plot
-            show_plots=False,
-            separatrix_plot=True)
+    ## Plots
+    if n_bunches == 1:
+        plots = Plot(ring_ps, rf_params_ps, beam_ps, dt_plt, ring_ps.n_turns,
+                0, (n_bunches)*rf_params_ps.t_rf[0, 0], # <----- dt limits of the phase space plot
+                E_min, E_max, # <---------------- dE limits of the phase space plot
+                show_plots=False,
+                separatrix_plot=True)
     
-
-    # Tracking
+    ## Tracking
     for turn in range(ring_ps.n_turns):
         # plt.plot(abs(PS_longitudinal_intensity.induced_voltage[:1000]))
         # plt.show()
@@ -432,17 +483,42 @@ for idx_sim in range(number_iterations_for_extraction):
                 plt.tight_layout()
                 plt.savefig(results_folder + '/bunch_distribution_turn_' + str(turn) + '.png')
 
-    plots = Plot(ring_ps, rf_params_ps, beam_ps, 1, ring_ps.n_turns,
-            0, (n_bunches)*rf_params_ps.t_rf[0, 0], # <----- dt limits of the phase space plot
-            E_min, E_max, # <---------------- dE limits of the phase space plot
-            show_plots=plot_final_turn,
-            separatrix_plot=True)
+    ring_sps = Ring(circumference_sps, momentum_compaction_sps, momentum_sps,
+                   particle_type)
+    
+    rf_params_sps = RFStation(ring_sps, harmonic_number_sps,
+                             voltage_sps, 0, 1)
+    
+    #beam_sps = Beam(ring_sps, 1, 1)
+
+    if n_bunches == 1:
+        ## Plot in PS bucket
+        plt.clf()
+        plots_ps = Plot(ring_ps, rf_params_ps, beam_ps, 1, ring_ps.n_turns,
+                0, (n_bunches)*rf_params_ps.t_rf[0, 0], # <----- dt limits of the phase space plot
+                E_min, E_max, # <---------------- dE limits of the phase space plot
+                show_plots=plot_final_turn,
+                separatrix_plot=True)
+        
+        ## Plot in SPS bucket
+        plots_sps = Plot(ring_sps, rf_params_sps, beam_ps, 1, ring_ps.n_turns,
+                0, (n_bunches)*rf_params_ps.t_rf[0, 0], # <----- dt limits of the phase space plot
+                E_min, E_max, # <---------------- dE limits of the phase space plot
+                show_plots=plot_final_turn,
+                separatrix_plot=True)
+    
+    ## Calculate number of particles in the SPS separatrix
+    isinsep = is_in_separatrix(ring_sps, rf_params_sps, beam_ps, beam_ps.dt, beam_ps.dE, voltage_sps)
+    ## Calculate the PS2SPS transmission
+    transmission = isinsep.sum()/len(isinsep) 
     
     extraction_turn = np.where(
         np.nanmean(gaussian_4sig_save, axis=0) ==
         np.nanmin(np.nanmean(gaussian_4sig_save, axis=0)))[0]
     print("Minimum bunch length: ",  np.nanmin(np.nanmean(gaussian_4sig_save, axis=0)))
-    
+    print("Transmission: ", 100*transmission, " %")
+
+## Induced voltage
 # profile_ps.rms()
 # time_array = np.linspace(0, ring_ps.t_rev[0], len(PS_longitudinal_intensity.induced_voltage))
 # print('bunch length: ', profile_ps.bunchLength)
@@ -454,7 +530,7 @@ for idx_sim in range(number_iterations_for_extraction):
 # plt.legend(loc='best')
 # plt.show()
     
-if plot_voltage_ramp:
+if plot_voltage_program:
     plt.figure('Voltage ramp')
     plt.clf()
     plt.plot(ring_ps.cycle_time * 1e6, C40_77_RF_program*1e-3, label='C40_77_RF_program')
@@ -466,6 +542,17 @@ if plot_voltage_ramp:
     # plt.plot(ring_ps.cycle_time * 1e6, rf_prog_h168*1e-3, 'r--', label='rf_prog_h168')
     plt.xlabel('Time [us]')
     plt.ylabel('Voltage [kV]')
+    plt.legend(loc='best')
+    plt.tight_layout()
+    plt.show()
+
+if plot_phase_program:
+    plt.figure('Voltage ramp')
+    plt.clf()
+    plt.plot(ring_ps.cycle_time * 1e6, phi_prog_h84 * 180/np.pi, label='phi_prog_h84')
+    plt.plot(ring_ps.cycle_time * 1e6, phi_prog_h168 * 180/np.pi, label='phi_prog_h168')
+    plt.xlabel('Time [us]')
+    plt.ylabel('Phase [deg]')
     plt.legend(loc='best')
     plt.tight_layout()
     plt.show()
@@ -507,10 +594,13 @@ kde = gaussian_kde(xy_sample)
 x_grid, y_grid = np.mgrid[0:(n_bunches)*rf_params_ps.t_rf[0, 0]/1e-9:100j, y.min():y.max():100j]
 positions = np.vstack([x_grid.ravel(), y_grid.ravel()])
 density = np.reshape(kde(positions).T, x_grid.shape)
+
 plt.figure('Bunch distribution: heat map')
 plt.clf()
 #plt.pcolormesh(x_grid, y_grid, density, shading='auto', cmap='gist_heat_r')
-plt.contourf(x_grid, y_grid, density, levels=100, cmap='turbo')
+C = np.loadtxt( r'colormap.txt')
+cm = mpl.colors.ListedColormap(C)
+plt.contourf(x_grid, y_grid, density, levels=100, cmap=cm)
 plt.colorbar(label='Density')
 plt.xlim(10,15)
 plt.xlabel('$\\Delta t$ [ns]')
@@ -528,6 +618,11 @@ np.savez(results_folder + '/bunch_lengths.npz',
 np.savez(results_folder + '/bunch_distribution.npz',
          beam_dt=beam_ps.dt,
          beam_dE=beam_ps.dE)
+
+np.savez(results_folder + '/transmission.npz',
+         init_num_particles = len(isinsep),
+         final_num_particles = isinsep.sum(),
+         transmission = transmission)
 
 #Plotting animation
 if plot_animation:
@@ -641,5 +736,4 @@ if plot_impeadance:
     plt.ylabel('ImZ/n [$\\Omega$]')
     plt.tight_layout()
     # plt.savefig(fig_path+'/imZ_over_n.png')
-
     plt.show()
