@@ -4,8 +4,7 @@ Author: A. Lasheen
 PS non adiabatic bunch shortening
 Single bunch
 With intensity effects
-'''
-'''
+
 Edited by: J.Flowerdew
 '''
 
@@ -34,8 +33,8 @@ from blond.plots.plot import Plot
 from blond.impedances.impedance import InductiveImpedance, InducedVoltageTime, InducedVoltageFreq, TotalInducedVoltage
 from blond.impedances.impedance_sources import Resonators
 from blond.impedances import induced_voltage_analytical
-from PS_bunch_rotation_generation import C40_77_prog, C40_78_prog, C80_08_prog, C80_88_prog, C80_phase_prog, C40_phase_prog
 from SPS_parameters import circumference_sps, momentum_compaction_sps, momentum_sps, harmonic_number_sps, voltage_sps
+from PS_bunch_rotation_generation import C40_77_prog, C40_78_prog, C80_08_prog, C80_88_prog, C80_phase_prog, C40_phase_prog
 
 # BLonD common imports
 sys.path.append('../../pymodules/')
@@ -65,7 +64,7 @@ results_folder = 'results/' + case_name
 plot_turns = False
 plot_animation = False
 plot_save_turns = False
-plot_final_turn = False
+plot_final_turn = True
 plot_voltage_program = True
 plot_phase_program = False
 plot_impeadance = False
@@ -75,10 +74,12 @@ plot_induced_voltage = False
 multi_turn_wake = False
 
 ## Bunch rotation settings in 10 MHz clock (i.e. 0.1 us steps)
-h84_start_offset = 12150
-h84_delay = 12550
-h168_delay = 78800
-h84_adiabatic_ramp = 65000
+h84_start_offset = 12050 #12150 +200
+h84_delay = 12550 #12550 #12550
+h168_delay = 78850 #78850 #79000 #78850
+h84_adiabatic_ramp = 65000 #65000
+
+print('h168_delay - h84_delay - h84_adiabatic_ramp: ', h168_delay - h84_delay - h84_adiabatic_ramp)
 
 # %% BLonD setting up
 
@@ -100,7 +101,7 @@ C40_78_prog_factor = 231.46/300         # Calibration factor C40-78 (old value: 
 C80_08_prog_factor = 0                  # Calibration factor C80-08 (old value: 1.) # 279.14/300
 C80_88_prog_factor = 311.56/300         # Calibration factor C80-88 (old value: 1.)
 C80_89_prog_factor = 277.58/300         # Calibration factor C80-89 (old value: 0.) # 277.58/300
-
+print('length_step_h168: ', length_step_h168)
 ## RF phase PS
 intial_phase_h84 = 0
 final_phase_h84 = 0
@@ -146,7 +147,7 @@ RshFactor_MU_downstream=1/6
 QFactor_MU_downstream=1/6
 
 ## Plotting parameters
-dt_plt = 50 # <----- Number of turns between phase space plots
+dt_plt = 5 # <----- Number of turns between phase space plots
 E_min = -100e6
 E_max = 100e6
 
@@ -178,7 +179,8 @@ for idx_sim in range(number_iterations_for_extraction):
     #print('extraction_turn:', extraction_turn)
 
     if extraction_turn == -1:
-        time_shortening = 40e-6 + 230.65e-6 #PEX.SEJ - PAX.SBRH84 - 6500 us  #1500e-6 for filamentation #294e-6 for local optimum
+        time_shortening = 20e-6 + 50e-6 + 230.65e-6 #PEX.SEJ - PAX.SBRH84 - 6500 us  #1500e-6 for filamentation #294e-6 for local optimum
+        print('time shortening: ', time_shortening)
         n_turns_ps = int(round(time_shortening / ring_ps.t_rev[0]))
     else:
         n_turns_ps = extraction_turn[0] + 1
@@ -188,6 +190,7 @@ for idx_sim in range(number_iterations_for_extraction):
 
     # RF parameters
     start_bunch_rotation_h84 = 0.1*(h84_delay - h84_start_offset)*1e-6  #40e-6
+    print('start_bunch_rotation_h84: ', start_bunch_rotation_h84)
 
     C40_77_RF_program = 1e3 * C40_77_prog(ring_ps.cycle_time * 1e6,
                                           start_bunch_rotation_h84 * 1e6,
@@ -303,7 +306,7 @@ for idx_sim in range(number_iterations_for_extraction):
                                 freq_array=np.linspace(0, 5.2e9, int(1e7))) # machineParams.freqArray
 
 
-    PS_loader.importImpedancePS() 
+    PS_loader.importImpedancePS()
 
     imp = PS_loader.export2BLonD()
 
@@ -354,19 +357,20 @@ for idx_sim in range(number_iterations_for_extraction):
 
     PS_longitudinal_intensity = TotalInducedVoltage(beam_ps, profile_ps, [PS_intensity_freq, PS_inductive])
 
-    #plt.figure('Impedance')
-    uber_plot(PS_intensity_freq.freq/1e6,
-          np.abs(PS_intensity_freq.total_impedance*profile_ps.bin_size)/1e3,
-          figname='Impedance',
-          xlabel='Frequency [MHz]',
-          ylabel='Impedance $\\|Z\\|$ [$\\mathrm{k\\Omega}$]',
-          savefig=results_folder+'/impedance.png')
-    plt.xlim((0.4, 1.02*np.max(PS_intensity_freq.freq)/1e6))
-    plt.ylim((0.5, 1.1*np.max(np.abs(PS_intensity_freq.total_impedance*profile_ps.bin_size))/1e3))
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.tight_layout()
-    plt.savefig(results_folder+'/impedance_log.png')
+    if plot_impeadance:
+        #plt.figure('Impedance')
+        uber_plot(PS_intensity_freq.freq/1e6,
+            np.abs(PS_intensity_freq.total_impedance*profile_ps.bin_size)/1e3,
+            figname='Impedance',
+            xlabel='Frequency [MHz]',
+            ylabel='Impedance $\\|Z\\|$ [$\\mathrm{k\\Omega}$]',
+            savefig=results_folder+'/impedance.png')
+        plt.xlim((0.4, 1.02*np.max(PS_intensity_freq.freq)/1e6))
+        plt.ylim((0.5, 1.1*np.max(np.abs(PS_intensity_freq.total_impedance*profile_ps.bin_size))/1e3))
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.tight_layout()
+        plt.savefig(results_folder+'/impedance_log.png')
 
     # RF tracker
     longitudinal_tracker_ps = RingAndRFTracker(rf_params_ps, beam_ps, interpolation=True,
@@ -449,7 +453,13 @@ for idx_sim in range(number_iterations_for_extraction):
                 E_min, E_max, # <---------------- dE limits of the phase space plot
                 show_plots=False,
                 separatrix_plot=True)
+        
+        
+    ring_sps = Ring(circumference_sps, momentum_compaction_sps, momentum_sps,
+                   particle_type)
     
+    rf_params_sps = RFStation(ring_sps, harmonic_number_sps,
+                             voltage_sps, 0, 1)   
     ## Tracking
     for turn in range(ring_ps.n_turns):
         # plt.plot(abs(PS_longitudinal_intensity.induced_voltage[:1000]))
@@ -483,17 +493,12 @@ for idx_sim in range(number_iterations_for_extraction):
                 plt.tight_layout()
                 plt.savefig(results_folder + '/bunch_distribution_turn_' + str(turn) + '.png')
 
-    ring_sps = Ring(circumference_sps, momentum_compaction_sps, momentum_sps,
-                   particle_type)
-    
-    rf_params_sps = RFStation(ring_sps, harmonic_number_sps,
-                             voltage_sps, 0, 1)
+
     
     #beam_sps = Beam(ring_sps, 1, 1)
 
-    if n_bunches == 1:
+    if plot_final_turn:
         ## Plot in PS bucket
-        plt.clf()
         plots_ps = Plot(ring_ps, rf_params_ps, beam_ps, 1, ring_ps.n_turns,
                 0, (n_bunches)*rf_params_ps.t_rf[0, 0], # <----- dt limits of the phase space plot
                 E_min, E_max, # <---------------- dE limits of the phase space plot
@@ -507,10 +512,19 @@ for idx_sim in range(number_iterations_for_extraction):
                 show_plots=plot_final_turn,
                 separatrix_plot=True)
     
+
+    init_macroparticles = beam_ps.n_macroparticles
     ## Calculate number of particles in the SPS separatrix
-    isinsep = is_in_separatrix(ring_sps, rf_params_sps, beam_ps, beam_ps.dt, beam_ps.dE, voltage_sps)
-    ## Calculate the PS2SPS transmission
-    transmission = isinsep.sum()/len(isinsep) 
+    beam_ps.losses_separatrix(ring_sps, rf_params_sps)
+    beam_ps.eliminate_lost_particles()
+
+    # ## Cut out particles that lie outside of the central SPS bucket
+    # beam_ps.losses_longitudinal_cut(2*rf_params_sps.t_rf[0, 0], 3*rf_params_sps.t_rf[0, 0])
+    # beam_ps.eliminate_lost_particles()
+
+    final_macroparticles = beam_ps.n_macroparticles_alive
+    # Calculate the PS2SPS transmission
+    transmission = final_macroparticles/init_macroparticles
     
     extraction_turn = np.where(
         np.nanmean(gaussian_4sig_save, axis=0) ==
@@ -529,7 +543,8 @@ for idx_sim in range(number_iterations_for_extraction):
 # plt.xlabel('Time [s]')
 # plt.legend(loc='best')
 # plt.show()
-    
+
+
 if plot_voltage_program:
     plt.figure('Voltage ramp')
     plt.clf()
@@ -538,8 +553,8 @@ if plot_voltage_program:
     plt.plot(ring_ps.cycle_time * 1e6, C80_08_RF_program*1e-3, label='C80_08_RF_program')
     plt.plot(ring_ps.cycle_time * 1e6, C80_88_RF_program*1e-3, label='C80_88_RF_program')
     plt.plot(ring_ps.cycle_time * 1e6, C80_89_RF_program*1e-3, label='C80_89_RF_program')
-    # plt.plot(ring_ps.cycle_time * 1e6, rf_prog_h84*1e-3, 'k--', label='rf_prog_h84')
-    # plt.plot(ring_ps.cycle_time * 1e6, rf_prog_h168*1e-3, 'r--', label='rf_prog_h168')
+    plt.plot(ring_ps.cycle_time * 1e6, rf_prog_h84*1e-3, 'k--', label='rf_prog_h84')
+    plt.plot(ring_ps.cycle_time * 1e6, rf_prog_h168*1e-3, 'r--', label='rf_prog_h168')
     plt.xlabel('Time [us]')
     plt.ylabel('Voltage [kV]')
     plt.legend(loc='best')
@@ -620,25 +635,25 @@ np.savez(results_folder + '/bunch_distribution.npz',
          beam_dE=beam_ps.dE)
 
 np.savez(results_folder + '/transmission.npz',
-         init_num_particles = len(isinsep),
-         final_num_particles = isinsep.sum(),
+         init_num_particles = init_macroparticles,
+         final_num_particles = final_macroparticles,
          transmission = transmission)
 
 #Plotting animation
 if plot_animation:
-    fig = plt.figure('Animation') 
+    fig = plt.figure('Animation')
     
     # marking the x-axis and y-axis 
-    axis = plt.axes(xlim=(5, 20),  ylim=(-80, 80), xlabel = '$\\Delta t$ [ns]', ylabel ='$\\Delta E$ [MeV]' ) 
+    axis = plt.axes(xlim=(5, 20),  ylim=(-80, 80), xlabel = '$\\Delta t$ [ns]', ylabel ='$\\Delta E$ [MeV]' )
     
     # initializing a line variable 
-    scatter_plot, = axis.plot([], [], linestyle="",  marker='.') 
+    scatter_plot, = axis.plot([], [], linestyle="",  marker='.')
     
-    # data which the line will 
-    # contain (x, y) 
-    def init(): 
-        scatter_plot.set_data([], []) 
-        return scatter_plot, 
+    # data which the line will
+    # contain (x, y)
+    def init():
+        scatter_plot.set_data([], [])
+        return scatter_plot,
     
     def animate(i): 
         x = data_dt[i]
@@ -646,13 +661,13 @@ if plot_animation:
         scatter_plot.set_data(x, y) 
         return scatter_plot, 
     
-    anim = FuncAnimation(fig, animate, 
-                        init_func = init, 
-                        frames = len(data_dt), 
+    anim = FuncAnimation(fig, animate,
+                        init_func = init,
+                        frames = len(data_dt),
                         interval = dt_plt,
-                        blit = True) 
+                        blit = True)
     
-    anim.save(results_folder +'/bunch_rotation.gif', 
+    anim.save(results_folder +'/bunch_rotation.gif',
             writer = 'pillow', fps = 3)
     
 
